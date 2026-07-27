@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ee84b36ae39a644da86797c9cd2b00a, type: 3}
+  m_Name: Fish_MelekBaligi
+  m_EditorClassIdentifier: FishMatch.Match3::FishMatch.Match3.FishSpeciesDefinition
+  speciesId: MelekBaligi
+  displayName: "Melek Bal\u0131\u011F\u0131"
+  rarity: 1
+  totalPieces: 16
+  funFact: "Melek bal\u0131klar\u0131 \xE7ift e\u015Fle\u015Fir ve \xF6m\xFCr boyu
+    ayn\u0131 e\u015Fle kalabilir!"
+  productionIntervalSeconds: 8
+  goldPerProduction: 5

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ee84b36ae39a644da86797c9cd2b00a, type: 3}
+  m_Name: Fish_EjderhaBaligi
+  m_EditorClassIdentifier: FishMatch.Match3::FishMatch.Match3.FishSpeciesDefinition
+  speciesId: EjderhaBaligi
+  displayName: "Ejderha Bal\u0131\u011F\u0131"
+  rarity: 2
+  totalPieces: 30
+  funFact: "Ejderha bal\u0131\u011F\u0131 ad\u0131n\u0131, y\xFCzge\xE7lerinin efsanevi
+    ejderhalar\u0131 and\u0131rmas\u0131ndan al\u0131r!"
+  productionIntervalSeconds: 8
+  goldPerProduction: 5

@@ -57,3 +57,4 @@ crashlytics-build.properties
 .claude/*.log
 .claude/editmode_*.xml
 .gstack/
+CLAUDE.md

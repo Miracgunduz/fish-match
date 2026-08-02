@@ -40,7 +40,7 @@ namespace FishMatch.EditorTools
                 fishRoster[i] = AssetDatabase.LoadAssetAtPath<FishSpeciesDefinition>(FishRosterAssetPaths[i]);
             }
 
-            var levelController = GameObject.Find("LevelManager").GetComponent<LevelController>();
+            var levelController = EditorSetupUtil.RequireGameObject("LevelManager", "LevelSetup").GetComponent<LevelController>();
 
             var collectionGO = new GameObject("FishCollectionManager");
             var collectionManager = collectionGO.AddComponent<FishCollectionManager>();
@@ -62,11 +62,12 @@ namespace FishMatch.EditorTools
 
             // ResultPanel is inactive by default, and GameObject.Find only searches active objects -
             // find it via its (active) Canvas parent's Transform.Find instead, which does see inactive children.
-            var resultPanelTransform = GameObject.Find("Canvas").transform.Find("ResultPanel");
+            var canvasGO = EditorSetupUtil.RequireGameObject("Canvas", "LevelSetup");
+            var resultPanelTransform = canvasGO.transform.Find("ResultPanel");
             var pieceProgressText = LevelSetup.CreateText(resultPanelTransform, "PieceProgressText", "",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 70f));
 
-            var hudGO = GameObject.Find("HUD");
+            var hudGO = EditorSetupUtil.RequireGameObject("HUD", "LevelSetup");
             var fishHud = hudGO.AddComponent<FishProgressHUDController>();
             var fishHudSo = new SerializedObject(fishHud);
             fishHudSo.FindProperty("collectionManager").objectReferenceValue = collectionManager;
@@ -89,17 +90,20 @@ namespace FishMatch.EditorTools
             }
         }
 
+        private const string KenneyFishFolder = "Assets/Art/Kenney/Fish";
+
         private static void CreateFishRoster()
         {
             CreateFishSpecies(FishRosterAssetPaths[0], "JaponBaligi", "Japon Balığı", FishRarity.Common, 8,
-                "Japon balıkları uygun koşullarda 20 yıldan fazla yaşayabilir!");
+                "Japon balıkları uygun koşullarda 20 yıldan fazla yaşayabilir!", "Fish_Orange");
             CreateFishSpecies(FishRosterAssetPaths[1], "MelekBaligi", "Melek Balığı", FishRarity.Rare, 16,
-                "Melek balıkları çift eşleşir ve ömür boyu aynı eşle kalabilir!");
+                "Melek balıkları çift eşleşir ve ömür boyu aynı eşle kalabilir!", "Fish_Blue");
             CreateFishSpecies(FishRosterAssetPaths[2], "EjderhaBaligi", "Ejderha Balığı", FishRarity.Legendary, 30,
-                "Ejderha balığı adını, yüzgeçlerinin efsanevi ejderhaları andırmasından alır!");
+                "Ejderha balığı adını, yüzgeçlerinin efsanevi ejderhaları andırmasından alır!", "Fish_Red");
         }
 
-        private static void CreateFishSpecies(string path, string speciesId, string displayName, FishRarity rarity, int totalPieces, string funFact)
+        private static void CreateFishSpecies(string path, string speciesId, string displayName, FishRarity rarity,
+            int totalPieces, string funFact, string kenneyFishSpriteName)
         {
             if (File.Exists(path))
             {
@@ -112,6 +116,7 @@ namespace FishMatch.EditorTools
             fish.rarity = rarity;
             fish.totalPieces = totalPieces;
             fish.funFact = funFact;
+            fish.icon = AssetDatabase.LoadAssetAtPath<Sprite>($"{KenneyFishFolder}/{kenneyFishSpriteName}.png");
             AssetDatabase.CreateAsset(fish, path);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

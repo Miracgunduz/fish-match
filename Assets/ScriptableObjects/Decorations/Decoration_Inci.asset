@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 631e74b93733acd4d984a43eefd7eb59, type: 3}
+  m_Name: Decoration_Inci
+  m_EditorClassIdentifier: FishMatch.Match3::FishMatch.Match3.DecorationDefinition
+  decorationId: Inci
+  displayName: "\u0130nci Kabu\u011Fu"
+  price: 100
+  sprite: {fileID: 21300000, guid: feccf25b0de14ca48943c0c7ffe6e3c8, type: 3}
+  tankPosition: {x: 2.8, y: -2.3}

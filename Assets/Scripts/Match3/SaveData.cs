@@ -8,7 +8,9 @@ namespace FishMatch.Match3
     {
         public int gold;
         public int currentLevelNumber = 1;
+        public long lastFedUnixSeconds;
         public List<string> ownedSpeciesIds = new List<string>();
+        public List<string> ownedDecorationIds = new List<string>();
         public List<PieceProgressEntry> pieceProgress = new List<PieceProgressEntry>();
     }
 

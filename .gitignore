@@ -56,3 +56,4 @@ crashlytics-build.properties
 # Local automation debug artifacts (batch-mode logs / test result dumps), not real project files
 .claude/*.log
 .claude/editmode_*.xml
+.gstack/

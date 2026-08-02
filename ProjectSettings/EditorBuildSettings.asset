@@ -17,4 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FishDex.unity
     guid: b349e135c2b52ba419f51f1d6bd5a851
+  - enabled: 1
+    path: Assets/Scenes/LevelMap.unity
+    guid: a34e7bacb490df846bafdce2336e1ab3
   m_configObjects: {}

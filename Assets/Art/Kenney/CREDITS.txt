@@ -1,0 +1,9 @@
+Art in this folder is from Kenney.nl (https://kenney.nl), released under CC0 1.0
+(public domain - free for personal and commercial use, no attribution required).
+
+Packs used:
+- UI Pack            https://kenney.nl/assets/ui-pack
+- Fish Pack          https://kenney.nl/assets/fish-pack
+- Physics Assets     https://kenney.nl/assets/physics-assets (coin sprite only)
+
+Files were renamed/recolored-subset on import; pixel content is unmodified from source.

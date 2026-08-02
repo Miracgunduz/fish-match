@@ -14,15 +14,19 @@ namespace FishMatch.Match3
         [SerializeField] private Text resultText;
         [SerializeField] private Button restartButton;
 
+        private bool levelWasWon;
+
         private void Awake()
         {
             resultPanel.SetActive(false);
-            restartButton.onClick.AddListener(RestartLevel);
+            restartButton.onClick.AddListener(HandleRestartButtonClicked);
         }
 
         private void OnEnable()
         {
-            levelText.text = $"Seviye {levelController.CurrentLevelNumber}";
+            levelText.text = levelController.IsChallengeLevel
+                ? $"Seviye {levelController.CurrentLevelNumber} - Meydan Okuma!"
+                : $"Seviye {levelController.CurrentLevelNumber}";
 
             levelController.OnMovesChanged += HandleMovesChanged;
             levelController.OnScoreChanged += HandleScoreChanged;
@@ -50,6 +54,7 @@ namespace FishMatch.Match3
 
         private void HandleLevelWon()
         {
+            levelWasWon = true;
             resultText.text = "Seviye Tamamlandı!";
             SetRestartButtonLabel("Sonraki Seviye");
             resultPanel.SetActive(true);
@@ -57,6 +62,7 @@ namespace FishMatch.Match3
 
         private void HandleLevelLost()
         {
+            levelWasWon = false;
             resultText.text = "Hamle Bitti";
             SetRestartButtonLabel("Tekrar Dene");
             resultPanel.SetActive(true);
@@ -71,8 +77,15 @@ namespace FishMatch.Match3
             }
         }
 
-        private void RestartLevel()
+        private void HandleRestartButtonClicked()
         {
+            // Winning always offers the next level in sequence from here (even when replaying an
+            // already-completed level from the map); losing just retries the same level.
+            if (levelWasWon)
+            {
+                LevelProgressionState.SelectLevel(levelController.CurrentLevelNumber + 1);
+            }
+
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
     }

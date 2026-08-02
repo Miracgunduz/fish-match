@@ -24,6 +24,11 @@ namespace FishMatch.Match3
         {
             species = speciesDefinition;
             wanderBounds = bounds;
+            if (species.icon != null)
+            {
+                spriteRenderer.sprite = species.icon;
+            }
+
             PickNewWanderTarget();
             productionTimer = species.productionIntervalSeconds;
         }

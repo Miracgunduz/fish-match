@@ -24,6 +24,10 @@ namespace FishMatch.Match3
         // Fired once per cascade step within a swap's resolution, with the number of gems cleared in that step.
         public event Action<int> OnGemsCleared;
 
+        // Fired once a swap's entire cascade has fully settled (all steps done) - the point at which
+        // it's safe to check whether the player has run out of moves.
+        public event Action OnSwapResolved;
+
         public bool InputEnabled { get; set; } = true;
 
         private Match3Grid grid;
@@ -38,13 +42,26 @@ namespace FishMatch.Match3
 
         private void Start()
         {
+            if (gemDefinitions == null || gemDefinitions.Length < 3)
+            {
+                Debug.LogError($"{name}: Match3GridController needs at least 3 gem definitions - fewer can make the no-pre-formed-match fill constraints unsatisfiable.", this);
+                enabled = false;
+                return;
+            }
+
             targetCamera = Camera.main;
             BuildDefinitionLookup();
 
             grid = new Match3Grid(width, height, RandomGemType);
-            grid.FillRandom();
-
             gemViews = new Gem[width, height];
+
+            grid.FillRandom();
+            SpawnAllGems();
+            ReshuffleUntilSolvable();
+        }
+
+        private void SpawnAllGems()
+        {
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -52,6 +69,32 @@ namespace FishMatch.Match3
                     var cell = new Vector2Int(x, y);
                     gemViews[x, y] = SpawnGem(grid.GetCell(cell), cell, spawnAboveGrid: false);
                 }
+            }
+        }
+
+        // If the board has no legal swaps left, reshuffle it entirely rather than leaving the player
+        // permanently stuck with no way to keep playing (a deadlocked board used to be a hard soft-lock,
+        // since moves only ever decrement on a swap that produces a match). Bounded, not a while(true) -
+        // an unsolvable reshuffle is exceptionally unlikely with this grid size/gem count, but a bound
+        // means a pathological case degrades to "rare visible reshuffle" instead of hanging.
+        private void ReshuffleUntilSolvable()
+        {
+            const int maxAttempts = 5;
+            var attempts = 0;
+
+            while (!grid.HasAnyValidMove() && attempts < maxAttempts)
+            {
+                foreach (var gem in gemViews)
+                {
+                    if (gem != null)
+                    {
+                        Destroy(gem.gameObject);
+                    }
+                }
+
+                grid.FillRandom();
+                SpawnAllGems();
+                attempts++;
             }
         }
 
@@ -145,7 +188,9 @@ namespace FishMatch.Match3
             OnValidSwapPerformed?.Invoke();
 
             yield return ResolveMatchesRoutine();
+            ReshuffleUntilSolvable();
             isBusy = false;
+            OnSwapResolved?.Invoke();
         }
 
         private void SwapVisualAndData(Vector2Int a, Vector2Int b)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -8,6 +9,10 @@ namespace FishMatch.Match3
     // FishPieceProgress) to a JSON file so progress survives across app/Play sessions, not just scene
     // reloads within one. Match-3 board state itself is deliberately never saved - each level scene
     // regenerates a fresh board on load regardless.
+    //
+    // Ownership/piece-progress are both ID-based (see FishOwnershipRegistry/FishPieceProgress), so
+    // loading never depends on which scene's FishSpeciesDefinition roster happens to be available -
+    // it can run once, automatically, before any scene loads.
     public static class SaveManager
     {
         private const string SaveFileName = "savegame.json";
@@ -16,8 +21,24 @@ namespace FishMatch.Match3
 
         private static string SavePath => Path.Combine(Application.persistentDataPath, SaveFileName);
 
-        // Safe to call from multiple scenes' Awake/Start - only actually loads once per session.
-        public static void LoadIfNeeded(IReadOnlyList<FishSpeciesDefinition> knownRoster)
+        // Runs before LoadOnBoot (SubsystemRegistration fires ahead of BeforeSceneLoad) so a session
+        // that never gets a domain reload (Enter Play Mode Options with domain reload disabled) still
+        // re-reads the save file instead of silently reusing whatever was in memory from last time.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSessionFlag()
+        {
+            hasLoadedThisSession = false;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void LoadOnBoot()
+        {
+            LoadIfNeeded();
+        }
+
+        // Idempotent per session - safe to call defensively from anywhere, but no longer necessary to
+        // call from individual scenes/components now that LoadOnBoot runs automatically.
+        public static void LoadIfNeeded()
         {
             if (hasLoadedThisSession)
             {
@@ -31,43 +52,68 @@ namespace FishMatch.Match3
                 return;
             }
 
-            var json = File.ReadAllText(SavePath);
-            var data = JsonUtility.FromJson<SaveData>(json);
+            SaveData data;
+            try
+            {
+                var json = File.ReadAllText(SavePath);
+                data = JsonUtility.FromJson<SaveData>(json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"SaveManager: save file at {SavePath} could not be read ({e.Message}); starting fresh without touching the file.");
+                return;
+            }
+
             if (data == null)
             {
                 return;
             }
 
             CurrencyManager.SetGold(data.gold);
-            LevelProgressionState.SetCurrentLevelNumber(data.currentLevelNumber);
+            LevelProgressionState.SetHighestUnlockedLevel(data.currentLevelNumber);
+            FeedingState.SetLastFedUnixSeconds(data.lastFedUnixSeconds);
 
-            foreach (var speciesId in data.ownedSpeciesIds)
+            if (data.ownedSpeciesIds != null)
             {
-                var species = FindSpecies(knownRoster, speciesId);
-                if (species != null)
+                foreach (var speciesId in data.ownedSpeciesIds)
                 {
-                    FishOwnershipRegistry.MarkOwned(species);
+                    FishOwnershipRegistry.MarkOwnedById(speciesId);
                 }
             }
 
-            foreach (var entry in data.pieceProgress)
+            if (data.ownedDecorationIds != null)
             {
-                FishPieceProgress.SetPieces(entry.speciesId, entry.pieces);
+                foreach (var decorationId in data.ownedDecorationIds)
+                {
+                    DecorationOwnershipRegistry.MarkOwnedById(decorationId);
+                }
+            }
+
+            if (data.pieceProgress != null)
+            {
+                foreach (var entry in data.pieceProgress)
+                {
+                    if (entry != null)
+                    {
+                        FishPieceProgress.SetPieces(entry.speciesId, entry.pieces);
+                    }
+                }
             }
         }
 
+        // Writes via a temp file + atomic replace so a mid-write kill (very possible on mobile, and
+        // this is called on every coin collect) can never leave the save file truncated/corrupt - the
+        // original file is only ever replaced once the new content is fully and successfully written.
         public static void Save()
         {
             var data = new SaveData
             {
                 gold = CurrencyManager.Gold,
-                currentLevelNumber = LevelProgressionState.CurrentLevelNumber,
+                currentLevelNumber = LevelProgressionState.HighestUnlockedLevel,
+                lastFedUnixSeconds = FeedingState.LastFedUnixSeconds,
+                ownedSpeciesIds = new List<string>(FishOwnershipRegistry.OwnedSpeciesIds),
+                ownedDecorationIds = new List<string>(DecorationOwnershipRegistry.OwnedDecorationIds),
             };
-
-            foreach (var species in FishOwnershipRegistry.OwnedSpecies)
-            {
-                data.ownedSpeciesIds.Add(species.speciesId);
-            }
 
             foreach (var entry in FishPieceProgress.AllEntries)
             {
@@ -75,20 +121,25 @@ namespace FishMatch.Match3
             }
 
             var json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(SavePath, json);
-        }
+            var tempPath = SavePath + ".tmp";
 
-        private static FishSpeciesDefinition FindSpecies(IReadOnlyList<FishSpeciesDefinition> roster, string speciesId)
-        {
-            foreach (var species in roster)
+            try
             {
-                if (species != null && species.speciesId == speciesId)
+                File.WriteAllText(tempPath, json);
+
+                if (File.Exists(SavePath))
                 {
-                    return species;
+                    File.Replace(tempPath, SavePath, null);
+                }
+                else
+                {
+                    File.Move(tempPath, SavePath);
                 }
             }
-
-            return null;
+            catch (Exception e)
+            {
+                Debug.LogError($"SaveManager: failed to write save file ({e.Message}).");
+            }
         }
     }
 }

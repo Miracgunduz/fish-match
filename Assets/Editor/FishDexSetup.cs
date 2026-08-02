@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace FishMatch.EditorTools
@@ -100,13 +101,14 @@ namespace FishMatch.EditorTools
         {
             EditorSceneManager.OpenScene(AquariumScenePath);
 
-            var existing = GameObject.Find("Canvas")?.transform.Find("FishDexNavButton");
+            var canvasGO = EditorSetupUtil.RequireGameObject("Canvas", "AquariumSetup");
+
+            var existing = canvasGO.transform.Find("FishDexNavButton");
             if (existing != null)
             {
                 Object.DestroyImmediate(existing.gameObject);
             }
 
-            var canvasGO = GameObject.Find("Canvas");
             var buttonGO = AquariumSetup.CreateNavButtonVisual(canvasGO.transform, "FishDexNavButton", "Rehber",
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-280f, 90f), new Vector2(260f, 90f));
 
@@ -124,7 +126,7 @@ namespace FishMatch.EditorTools
         {
             var go = new GameObject("EventSystem");
             go.AddComponent<EventSystem>();
-            go.AddComponent<StandaloneInputModule>();
+            go.AddComponent<InputSystemUIInputModule>();
         }
 
         private static GameObject BuildCanvas()

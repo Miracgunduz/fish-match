@@ -12,14 +12,19 @@ namespace FishMatch.Match3
 
         private void Start()
         {
-            // Also loads here so opening this scene directly in the Editor still shows correct status.
-            SaveManager.LoadIfNeeded(fishRoster);
-
             var unlockedCount = 0;
+            var totalCount = 0;
             var sb = new StringBuilder();
 
             foreach (var species in fishRoster)
             {
+                if (species == null)
+                {
+                    Debug.LogWarning($"{name}: null entry in fishRoster, skipping.", this);
+                    continue;
+                }
+
+                totalCount++;
                 var owned = FishOwnershipRegistry.IsOwned(species);
                 if (owned)
                 {
@@ -37,8 +42,8 @@ namespace FishMatch.Match3
 
             entriesText.text = sb.ToString();
 
-            var percent = fishRoster.Length > 0 ? unlockedCount * 100 / fishRoster.Length : 0;
-            completionText.text = $"%{percent} Tamamlandı ({unlockedCount}/{fishRoster.Length})";
+            var percent = totalCount > 0 ? unlockedCount * 100 / totalCount : 0;
+            completionText.text = $"%{percent} Tamamlandı ({unlockedCount}/{totalCount})";
         }
     }
 }

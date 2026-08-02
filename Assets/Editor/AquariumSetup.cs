@@ -4,12 +4,14 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace FishMatch.EditorTools
 {
-    // Builds the Aquarium scene (owned fish swimming + passive gold income + tap-to-collect coins)
-    // and wires a nav button into it from Match3Test. Safe to re-run - removes its own previous
+    // Builds the Aquarium scene (owned fish swimming + passive gold income + tap-to-collect coins),
+    // with its own "Seviyeye Dön" and "Ana Menü" nav buttons. Match3Test's nav to here lives on its
+    // win/lose result panel (see LevelSetup), not here. Safe to re-run - removes its own previous
     // output first. Run via:
     // Unity.exe -batchmode -projectPath <path> -executeMethod FishMatch.EditorTools.AquariumSetup.Run -quit
     public static class AquariumSetup
@@ -19,7 +21,7 @@ namespace FishMatch.EditorTools
         private const string PrefabFolder = "Assets/Prefabs/Aquarium";
         private const string ScenePath = "Assets/Scenes/Aquarium.unity";
         private const string Match3ScenePath = "Assets/Scenes/Match3Test.unity";
-        private const string CoinSpritePath = ArtFolder + "/Shape_Yellow.png";
+        private const string CoinSpritePath = "Assets/Art/Kenney/UI/Coin_Gold.png";
 
         public static void Run()
         {
@@ -189,6 +191,8 @@ namespace FishMatch.EditorTools
 
             var goldText = LevelSetup.CreateText(canvasGO.transform, "GoldText", "Altın: 0",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -30f), new Vector2(320f, 70f));
+            var zoneText = LevelSetup.CreateText(canvasGO.transform, "ZoneText", "",
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(500f, 70f));
 
             var returnButtonGO = CreateReturnButton(canvasGO.transform);
 
@@ -197,6 +201,7 @@ namespace FishMatch.EditorTools
             var hud = hudGO.AddComponent<AquariumHUDController>();
             var hudSo = new SerializedObject(hud);
             hudSo.FindProperty("goldText").objectReferenceValue = goldText;
+            hudSo.FindProperty("zoneText").objectReferenceValue = zoneText;
             hudSo.ApplyModifiedPropertiesWithoutUndo();
 
             var navButton = returnButtonGO.AddComponent<SceneLoadButton>();
@@ -211,8 +216,27 @@ namespace FishMatch.EditorTools
             menuNavSo.FindProperty("sceneName").stringValue = "MainMenu";
             menuNavSo.ApplyModifiedPropertiesWithoutUndo();
 
+            BuildFeedingUI(canvasGO.transform);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
+        }
+
+        private static void BuildFeedingUI(Transform canvasParent)
+        {
+            // Mirrors ReturnButton/MainMenuButton's bottom-center row, offset to the left so it doesn't
+            // overlap them.
+            var feedButtonGO = CreateNavButtonVisual(canvasParent, "FeedButton", "Balıkları Besle",
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-280f, 90f), new Vector2(260f, 90f));
+            var feedStatusText = feedButtonGO.GetComponentInChildren<Text>();
+
+            var feedControllerGO = new GameObject("FishFeedingController");
+            feedControllerGO.transform.SetParent(canvasParent, false);
+            var feedController = feedControllerGO.AddComponent<FishFeedingController>();
+            var feedSo = new SerializedObject(feedController);
+            feedSo.FindProperty("feedButton").objectReferenceValue = feedButtonGO.GetComponent<Button>();
+            feedSo.FindProperty("statusText").objectReferenceValue = feedStatusText;
+            feedSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static GameObject CreateReturnButton(Transform parent)
@@ -228,7 +252,9 @@ namespace FishMatch.EditorTools
             go.transform.SetParent(parent, false);
 
             var image = go.AddComponent<Image>();
-            image.color = new Color(0.2f, 0.4f, 0.6f);
+            image.sprite = EditorSetupUtil.LoadKenneyButtonSprite("Blue");
+            image.type = Image.Type.Sliced;
+            image.color = Color.white;
 
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = anchorMin;
@@ -244,7 +270,7 @@ namespace FishMatch.EditorTools
             var text = textGO.AddComponent<Text>();
             text.text = label;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 32;
+            text.fontSize = 28;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
 
@@ -261,7 +287,7 @@ namespace FishMatch.EditorTools
         {
             var go = new GameObject("EventSystem");
             go.AddComponent<EventSystem>();
-            go.AddComponent<StandaloneInputModule>();
+            go.AddComponent<InputSystemUIInputModule>();
         }
 
         private static GameObject BuildCanvas()

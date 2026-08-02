@@ -6,11 +6,13 @@ namespace FishMatch.Match3
     public class AquariumHUDController : MonoBehaviour
     {
         [SerializeField] private Text goldText;
+        [SerializeField] private Text zoneText;
 
         private void OnEnable()
         {
             CurrencyManager.OnGoldChanged += HandleGoldChanged;
             HandleGoldChanged(CurrencyManager.Gold);
+            zoneText.text = LevelChapters.ChapterNameForLevel(LevelProgressionState.HighestUnlockedLevel);
         }
 
         private void OnDisable()

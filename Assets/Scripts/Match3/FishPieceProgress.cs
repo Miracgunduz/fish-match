@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishMatch.Match3
 {
@@ -10,6 +11,13 @@ namespace FishMatch.Match3
         private static readonly Dictionary<string, int> unlockedPiecesBySpeciesId = new Dictionary<string, int>();
 
         public static IReadOnlyDictionary<string, int> AllEntries => unlockedPiecesBySpeciesId;
+
+        // See CurrencyManager.Reset for why this is attributed.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        public static void Reset()
+        {
+            unlockedPiecesBySpeciesId.Clear();
+        }
 
         public static int GetPieces(string speciesId)
         {

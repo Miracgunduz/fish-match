@@ -5,8 +5,6 @@ namespace FishMatch.Match3
 {
     public class LevelController : MonoBehaviour
     {
-        private const int PointsPerGem = 10;
-
         [SerializeField] private LevelDefinition levelDefinition;
         [SerializeField] private Match3GridController gridController;
 
@@ -15,76 +13,87 @@ namespace FishMatch.Match3
         public event Action OnLevelWon;
         public event Action OnLevelLost;
 
-        public int MovesRemaining { get; private set; }
-        public int CurrentScore { get; private set; }
-        public int CurrentLevelNumber => LevelProgressionState.CurrentLevelNumber;
+        public int MovesRemaining => rules.MovesRemaining;
+        public int CurrentScore => rules.CurrentScore;
+        public int CurrentLevelNumber => LevelProgressionState.SelectedLevelNumber;
 
-        private int effectiveTargetScore;
-        private bool levelEnded;
+        private LevelRules rules;
+        private int moveLimit;
+        private bool resultAnnounced;
+
+        public bool IsChallengeLevel { get; private set; }
 
         private void Start()
         {
-            MovesRemaining = levelDefinition.moveLimit;
-            effectiveTargetScore = levelDefinition.targetScore
+            moveLimit = levelDefinition.moveLimit;
+            var targetScore = levelDefinition.targetScore
                 + (CurrentLevelNumber - 1) * levelDefinition.targetScoreIncreasePerLevel;
-            CurrentScore = 0;
-            levelEnded = false;
+
+            IsChallengeLevel = LevelChapters.GetMilestone(CurrentLevelNumber) == LevelChapters.MilestoneType.Challenge;
+            (moveLimit, targetScore) = LevelChapters.ApplyChallengeModifierIfNeeded(CurrentLevelNumber, moveLimit, targetScore);
+
+            rules = new LevelRules(moveLimit, targetScore);
+            resultAnnounced = false;
 
             gridController.OnValidSwapPerformed += HandleValidSwap;
             gridController.OnGemsCleared += HandleGemsCleared;
+            gridController.OnSwapResolved += HandleSwapResolved;
 
-            OnMovesChanged?.Invoke(MovesRemaining, levelDefinition.moveLimit);
-            OnScoreChanged?.Invoke(CurrentScore, effectiveTargetScore);
+            OnMovesChanged?.Invoke(rules.MovesRemaining, moveLimit);
+            OnScoreChanged?.Invoke(rules.CurrentScore, rules.TargetScore);
         }
 
         private void OnDestroy()
         {
+            if (gridController == null)
+            {
+                return;
+            }
+
             gridController.OnValidSwapPerformed -= HandleValidSwap;
             gridController.OnGemsCleared -= HandleGemsCleared;
+            gridController.OnSwapResolved -= HandleSwapResolved;
         }
 
         private void HandleValidSwap()
         {
-            if (levelEnded)
-            {
-                return;
-            }
-
-            MovesRemaining = Mathf.Max(0, MovesRemaining - 1);
-            OnMovesChanged?.Invoke(MovesRemaining, levelDefinition.moveLimit);
+            rules.RecordSwap();
+            OnMovesChanged?.Invoke(rules.MovesRemaining, moveLimit);
         }
 
         private void HandleGemsCleared(int count)
         {
-            if (levelEnded)
-            {
-                return;
-            }
-
-            CurrentScore += count * PointsPerGem;
-            OnScoreChanged?.Invoke(CurrentScore, effectiveTargetScore);
-
-            CheckForLevelEnd();
+            rules.RecordGemsCleared(count);
+            OnScoreChanged?.Invoke(rules.CurrentScore, rules.TargetScore);
+            AnnounceResultIfNeeded();
         }
 
-        // Win takes priority: a move that both exhausts the limit and reaches the target still counts as a win.
-        private void CheckForLevelEnd()
+        // Only checks the loss condition - by the time a swap fully resolves, every cascade step's
+        // score has already been recorded, so a final move that wins via a later cascade step is
+        // never mistakenly reported as a loss.
+        private void HandleSwapResolved()
         {
-            if (levelEnded)
+            rules.NotifySwapResolved();
+            AnnounceResultIfNeeded();
+        }
+
+        private void AnnounceResultIfNeeded()
+        {
+            if (resultAnnounced)
             {
                 return;
             }
 
-            if (CurrentScore >= effectiveTargetScore)
+            if (rules.IsWon)
             {
-                levelEnded = true;
+                resultAnnounced = true;
                 gridController.InputEnabled = false;
-                LevelProgressionState.AdvanceToNextLevel();
+                LevelProgressionState.NotifyLevelCompleted(CurrentLevelNumber);
                 OnLevelWon?.Invoke();
             }
-            else if (MovesRemaining <= 0)
+            else if (rules.IsLost)
             {
-                levelEnded = true;
+                resultAnnounced = true;
                 gridController.InputEnabled = false;
                 OnLevelLost?.Invoke();
             }

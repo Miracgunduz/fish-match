@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace FishMatch.EditorTools
@@ -32,7 +33,7 @@ namespace FishMatch.EditorTools
             RemoveExisting("EventSystem");
 
             var levelDefinition = AssetDatabase.LoadAssetAtPath<LevelDefinition>(levelDefinitionPath);
-            var gridController = GameObject.Find("Match3Grid").GetComponent<Match3GridController>();
+            var gridController = EditorSetupUtil.RequireGameObject("Match3Grid", "FishMatchSetup").GetComponent<Match3GridController>();
 
             var levelManagerGO = new GameObject("LevelManager");
             var levelController = levelManagerGO.AddComponent<LevelController>();
@@ -49,12 +50,13 @@ namespace FishMatch.EditorTools
             var movesText = CreateText(canvasGO.transform, "MovesText", "Hamle: 0/0",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -30f), new Vector2(320f, 70f));
             var scoreText = CreateText(canvasGO.transform, "ScoreText", "Puan: 0/0",
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f), new Vector2(320f, 70f));
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -110f), new Vector2(320f, 70f));
 
-            var resultPanel = CreatePanel(canvasGO.transform);
+            var resultPanel = CreatePanel("ResultPanel", canvasGO.transform);
             var resultText = CreateText(resultPanel.transform, "ResultText", "",
                 new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600f, 120f));
-            var restartButton = CreateButton(resultPanel.transform, "RestartButton", "Tekrar Dene");
+            var restartButton = CreateButton(resultPanel.transform, "RestartButton", "Tekrar Dene",
+                new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(320f, 100f));
 
             var menuButtonGO = AquariumSetup.CreateNavButtonVisual(resultPanel.transform, "MainMenuButton", "Ana Menü",
                 new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.5f), new Vector2(0f, -130f), new Vector2(280f, 80f));
@@ -62,6 +64,8 @@ namespace FishMatch.EditorTools
             var menuNavSo = new SerializedObject(menuNavButton);
             menuNavSo.FindProperty("sceneName").stringValue = "MainMenu";
             menuNavSo.ApplyModifiedPropertiesWithoutUndo();
+
+            BuildPauseUI(canvasGO.transform, gridController);
 
             var hudGO = new GameObject("HUD");
             hudGO.transform.SetParent(canvasGO.transform, false);
@@ -116,7 +120,7 @@ namespace FishMatch.EditorTools
         {
             var go = new GameObject("EventSystem");
             go.AddComponent<EventSystem>();
-            go.AddComponent<StandaloneInputModule>();
+            go.AddComponent<InputSystemUIInputModule>();
         }
 
         private static GameObject BuildCanvas()
@@ -157,9 +161,53 @@ namespace FishMatch.EditorTools
             return text;
         }
 
-        private static GameObject CreatePanel(Transform parent)
+        private static void BuildPauseUI(Transform canvasParent, Match3GridController gridController)
         {
-            var go = new GameObject("ResultPanel");
+            var pauseButtonGO = AquariumSetup.CreateNavButtonVisual(canvasParent, "PauseButton", "II",
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f), new Vector2(90f, 70f));
+
+            var pausePanel = CreatePanel("PausePanel", canvasParent);
+            CreateText(pausePanel.transform, "PauseTitleText", "Duraklatıldı",
+                new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600f, 120f));
+
+            var resumeButton = CreateButton(pausePanel.transform, "ResumeButton", "Devam Et",
+                new Vector2(0.5f, 0.58f), new Vector2(0.5f, 0.58f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(320f, 100f));
+            var restartButton = CreateButton(pausePanel.transform, "PauseRestartButton", "Tekrar Başlat",
+                new Vector2(0.5f, 0.46f), new Vector2(0.5f, 0.46f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(320f, 100f));
+
+            var aquariumButtonGO = AquariumSetup.CreateNavButtonVisual(pausePanel.transform, "PauseAquariumButton", "Akvaryum",
+                new Vector2(0.5f, 0.34f), new Vector2(0.5f, 0.34f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(320f, 90f));
+            var aquariumNavButton = aquariumButtonGO.AddComponent<SceneLoadButton>();
+            var aquariumNavSo = new SerializedObject(aquariumNavButton);
+            aquariumNavSo.FindProperty("sceneName").stringValue = "Aquarium";
+            aquariumNavSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var mainMenuButtonGO = AquariumSetup.CreateNavButtonVisual(pausePanel.transform, "PauseMainMenuButton", "Ana Menü",
+                new Vector2(0.5f, 0.22f), new Vector2(0.5f, 0.22f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(320f, 90f));
+            var mainMenuNavButton = mainMenuButtonGO.AddComponent<SceneLoadButton>();
+            var mainMenuNavSo = new SerializedObject(mainMenuNavButton);
+            mainMenuNavSo.FindProperty("sceneName").stringValue = "MainMenu";
+            mainMenuNavSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var pauseControllerGO = new GameObject("PauseController");
+            pauseControllerGO.transform.SetParent(canvasParent, false);
+            var pauseController = pauseControllerGO.AddComponent<PauseController>();
+            var pcSo = new SerializedObject(pauseController);
+            pcSo.FindProperty("gridController").objectReferenceValue = gridController;
+            pcSo.FindProperty("pausePanel").objectReferenceValue = pausePanel;
+            pcSo.FindProperty("pauseButton").objectReferenceValue = pauseButtonGO.GetComponent<Button>();
+            pcSo.FindProperty("resumeButton").objectReferenceValue = resumeButton;
+            pcSo.FindProperty("restartButton").objectReferenceValue = restartButton;
+            pcSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // PauseController.Awake() also hides this at runtime, but that only runs in Play mode -
+            // hide it here too so the scene doesn't look broken when just opened in the Editor.
+            pausePanel.SetActive(false);
+        }
+
+        private static GameObject CreatePanel(string name, Transform parent)
+        {
+            var go = new GameObject(name);
             go.transform.SetParent(parent, false);
 
             var image = go.AddComponent<Image>();
@@ -174,20 +222,22 @@ namespace FishMatch.EditorTools
             return go;
         }
 
-        private static Button CreateButton(Transform parent, string name, string label)
+        private static Button CreateButton(Transform parent, string name, string label, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 anchoredPosition, Vector2 sizeDelta)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
 
             var image = go.AddComponent<Image>();
-            image.color = new Color(0.2f, 0.6f, 0.3f);
+            image.sprite = EditorSetupUtil.LoadKenneyButtonSprite("Green");
+            image.type = Image.Type.Sliced;
+            image.color = Color.white;
 
             var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 0.4f);
-            rect.anchorMax = new Vector2(0.5f, 0.4f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = new Vector2(320f, 100f);
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.pivot = pivot;
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = sizeDelta;
 
             var button = go.AddComponent<Button>();
 
@@ -196,7 +246,7 @@ namespace FishMatch.EditorTools
             var text = textGO.AddComponent<Text>();
             text.text = label;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 32;
+            text.fontSize = 28;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
 

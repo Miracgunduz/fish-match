@@ -15,11 +15,6 @@ namespace FishMatch.Match3
         public event Action<FishSpeciesDefinition> OnFishUnlocked;
         public event Action OnAllFishUnlocked;
 
-        private void Awake()
-        {
-            SaveManager.LoadIfNeeded(fishRoster);
-        }
-
         private void OnEnable()
         {
             levelController.OnLevelWon += HandleLevelWon;
@@ -39,6 +34,12 @@ namespace FishMatch.Match3
         {
             foreach (var species in fishRoster)
             {
+                if (species == null)
+                {
+                    Debug.LogWarning($"{name}: null entry in fishRoster, skipping.", this);
+                    continue;
+                }
+
                 if (!FishOwnershipRegistry.IsOwned(species))
                 {
                     return species;

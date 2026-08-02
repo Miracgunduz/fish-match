@@ -8,6 +8,10 @@ namespace FishMatch.Match3
     // Match3GridController drives this and keeps the visual Gem objects in sync.
     public class Match3Grid
     {
+        // Bounds the initial-fill reroll loop - with very few gem types the "no pre-formed match"
+        // constraints can become unsatisfiable, and this stops that from hanging the game/Editor.
+        private const int MaxFillRerolls = 30;
+
         public int Width { get; }
         public int Height { get; }
 
@@ -45,10 +49,12 @@ namespace FishMatch.Match3
                 for (int y = 0; y < Height; y++)
                 {
                     GemType type;
+                    int attempts = 0;
                     do
                     {
                         type = randomGemProvider();
-                    } while (CausesInitialMatch(x, y, type));
+                        attempts++;
+                    } while (CausesInitialMatch(x, y, type) && attempts < MaxFillRerolls);
 
                     cells[x, y] = type;
                 }
@@ -98,6 +104,42 @@ namespace FishMatch.Match3
             {
                 cells[cell.x, cell.y] = null;
             }
+        }
+
+        // Checks whether any adjacent swap anywhere on the board would produce a match. Only checking
+        // each cell's right/up neighbor (not left/down too) still covers every adjacent pair exactly
+        // once. Used to detect and recover from a board with no legal moves left.
+        public bool HasAnyValidMove()
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    var a = new Vector2Int(x, y);
+
+                    var right = a + Vector2Int.right;
+                    if (InBounds(right) && SwapProducesMatch(a, right))
+                    {
+                        return true;
+                    }
+
+                    var up = a + Vector2Int.up;
+                    if (InBounds(up) && SwapProducesMatch(a, up))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool SwapProducesMatch(Vector2Int a, Vector2Int b)
+        {
+            Swap(a, b);
+            var hasMatch = FindMatches().Count > 0;
+            Swap(a, b);
+            return hasMatch;
         }
 
         // Row 0 is the bottom row: existing gems fall toward y=0, empty slots at the top get freshly rolled gems.

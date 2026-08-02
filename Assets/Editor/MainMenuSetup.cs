@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace FishMatch.EditorTools
@@ -40,15 +41,15 @@ namespace FishMatch.EditorTools
             titleText.fontSize = 90;
 
             var playButton = AquariumSetup.CreateNavButtonVisual(canvasGO.transform, "PlayButton", "Oyna",
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(420f, 130f));
-            WireNavButton(playButton, "Match3Test");
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 130f), new Vector2(300f, 90f));
+            WireNavButton(playButton, "LevelMap");
 
             var aquariumButton = AquariumSetup.CreateNavButtonVisual(canvasGO.transform, "AquariumButton", "Akvaryum",
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -40f), new Vector2(420f, 130f));
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(300f, 90f));
             WireNavButton(aquariumButton, "Aquarium");
 
             var fishDexButton = AquariumSetup.CreateNavButtonVisual(canvasGO.transform, "FishDexButton", "Rehber",
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -200f), new Vector2(420f, 130f));
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -130f), new Vector2(300f, 90f));
             WireNavButton(fishDexButton, "FishDex");
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -80,7 +81,7 @@ namespace FishMatch.EditorTools
         {
             var go = new GameObject("EventSystem");
             go.AddComponent<EventSystem>();
-            go.AddComponent<StandaloneInputModule>();
+            go.AddComponent<InputSystemUIInputModule>();
         }
 
         private static GameObject BuildCanvas()

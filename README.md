@@ -1,5 +1,7 @@
 # Fish Match
 
+[![Unity Tests](https://github.com/Miracgunduz/fish-match/actions/workflows/unity-tests.yml/badge.svg)](https://github.com/Miracgunduz/fish-match/actions/workflows/unity-tests.yml)
+
 A match-3 puzzle game where every match feeds and grows your own living aquarium. Clear gems on the board to earn currency, unlock new fish species, decorate your tank, and progress through a chapter-based level map.
 
 Built with **Unity 6** and C#.
